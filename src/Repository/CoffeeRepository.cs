@@ -41,7 +41,7 @@ namespace CoffeeAPIMinimal.Repository
 
             string weather = await cache.GetStringAsync(weatherRedisKey);
 
-            coffees = WeatherCheck(coffees, weather);
+            coffees = PreparingCoffeeWeatherCheck(coffees, weather);
 
             await cache.SetRecordAsync(recordKey, coffees);
 
