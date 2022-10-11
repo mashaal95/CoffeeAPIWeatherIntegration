@@ -1,4 +1,4 @@
-# CoffeeAPIMinimal
+# CoffeeAPIMinimalWeatherIntegration
 
 This is a project where a minimal .Net 6 Core API has been built to act as an imaginary coffee machine. It uses Redis to use a cache based counter to track the number of times the API has been called. It also integrates with an Open Weather API to change the message received based on the weather in Melbourne.
 
