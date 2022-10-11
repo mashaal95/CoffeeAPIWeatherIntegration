@@ -7,11 +7,11 @@ namespace CoffeeAPIMinimal.Interfaces
     {
         Task<object> GetCoffeeAsync(IDistributedCache cache, HttpContext context);
 
-        Task<string> CounterAsync(string ipAddress, IDistributedCache cache);
+        Task<string> UpdateCount(string ipAddress, IDistributedCache cache);
 
         string GetIpAddress(HttpContext context);
 
-        Task SetCurrentWeather(IDistributedCache cache);
+        Task<string> GetCurrentWeather();
 
     }
 }

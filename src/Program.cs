@@ -20,7 +20,7 @@ builder.Services.AddScoped<ICoffeeRepository, CoffeeRepository>();
 
 var app = builder.Build();
 
-app.MapGet("/brew-coffee", async Task<object> (HttpContext context, IDistributedCache cache, ICoffeeRepository coffeeRepository) => //Asynchonous added and an dynamic object added as return
+app.MapGet("/brew-coffee", async Task<object> (HttpContext context, IDistributedCache cache, ICoffeeRepository coffeeRepository) =>
 {
 
     var response = await coffeeRepository.GetCoffeeAsync(cache, context);
@@ -29,7 +29,6 @@ app.MapGet("/brew-coffee", async Task<object> (HttpContext context, IDistributed
 })
     .WithName("brew-coffee");
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

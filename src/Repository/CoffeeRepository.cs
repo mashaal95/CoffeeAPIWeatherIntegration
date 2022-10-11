@@ -12,72 +12,72 @@ namespace CoffeeAPIMinimal.Repository
             // For the retrieval of the OpenWeatherAPI key
             _config = config;
 
-        public async Task<string> CounterAsync(string key, IDistributedCache cache)
+        public async Task<string> UpdateCount(string key, IDistributedCache cache)
         {
-            string i = await cache.GetStringAsync(key);
-            i ??= "0";
-            int counter = int.Parse(i);
-            counter++;
-            await cache.SetStringAsync(key, counter.ToString());
-            var counterString = await cache.GetStringAsync(key);
+            int currentCount = await GetCount(key, cache);
+            currentCount++;
+            await SetCount(key, cache, currentCount);
 
-            return counterString;
+            return currentCount.ToString();
+        }
+
+        public async Task<int> GetCount(string key, IDistributedCache cache)
+        {
+            string response = await cache.GetStringAsync(key);
+            response ??= "0";
+            int currentCount = int.Parse(response);
+            
+            return currentCount;
+        }
+
+        public async Task SetCount(string key, IDistributedCache cache, int newCount)
+        {
+            await cache.SetStringAsync(key, newCount.ToString());
+
         }
 
         public async Task<object> GetCoffeeAsync(IDistributedCache cache, HttpContext context)
         {
-            //Declaring a unit recordKey to set our get the data
-            string recordKey = $"Coffee_{DateTime.Now.ToString("yyyyMMdd_hhmm")}";
-            object coffees = await cache.GetRecordAsync<Coffee>(recordKey);
+            ////Declaring a key for the Redis cache
+            //string recordKey = $"Coffee_{DateTime.Now.ToString("yyyyMMdd_hhmm")}";
+            //object coffee = await cache.GetRecordAsync<Coffee>(recordKey);
 
+            // Using the IP address to uniquely identify the user of the API
             string ipAddress = GetIpAddress(context);
 
-            string counterString = await CounterAsync(ipAddress, cache);
-            await SetCurrentWeather(cache);
+            string currentCount = await UpdateCount(ipAddress, cache);
+            
+            string weather = await GetCurrentWeather();
 
-            string weather = await cache.GetStringAsync(weatherRedisKey);
+            object coffee = new();
 
-            coffees = PreparingCoffeeWeatherCheck(coffees, weather);
+            coffee = PreparingCoffeeWeatherCheck(coffee, weather);
 
-            await cache.SetRecordAsync(recordKey, coffees);
 
-            if (coffees is not null)
-                coffees = AprilDateCheck(coffees, counterString, context);
+            if (coffee is not null)
+                coffee = AmITeapot(coffee, currentCount, context, DateTime.Now);
 
-           
-       
-
-         
-
-            return coffees;
+            return coffee;
         }
 
-        public async Task SetCurrentWeather(IDistributedCache cache)
+        public async Task<string> GetCurrentWeather()
         {
             // Using the Secret Manager to store and retrieve the API key for the OpenWeatherAPI
             var weatherApiKey = _config["OpenWeatherApi:ServiceApiKey"];
             WeatherClient Client = new WeatherClient(weatherApiKey);
 
             WeatherModel currentWeather = await Client.GetCurrentWeatherAsync(city, Weather.NET.Enums.Measurement.Metric);
-            await cache.SetStringAsync(weatherRedisKey, currentWeather.Main.Temperature.ToString());
-            
+            //await cache.SetStringAsync(weatherRedisKey, currentWeather.Main.Temperature.ToString());
+            return currentWeather.Main.Temperature.ToString();
         }
 
-        private object AprilDateCheck(object coffees, string counterString, HttpContext context)
+        private object AmITeapot(object coffees, string counterString, HttpContext context, DateTime dateTime)
         {
             
-                if (!(DateTime.Today.Day == 1 && DateTime.Today.Month == 4))
+                if (!(dateTime.Day == 1 && dateTime.Month == 4))
                 {
-                    if (int.Parse(counterString) % 5 == 0)
-                    {
-                        context.Response.StatusCode = 503;
-                        return string.Empty;
-                    }
-                    else
-                    {
-                        return coffees;
-                    }
 
+                return CheckService(coffees, counterString, context);
                 }
                 else
                 {
@@ -85,6 +85,19 @@ namespace CoffeeAPIMinimal.Repository
                     return string.Empty;
                 }
 
+        }
+
+        private object CheckService(object coffees, string counterString, HttpContext context)
+        {
+            if (int.Parse(counterString) % 5 == 0)
+            {
+                context.Response.StatusCode = 503;
+                return string.Empty;
+            }
+            else
+            {
+                return coffees;
+            }
         }
 
 
