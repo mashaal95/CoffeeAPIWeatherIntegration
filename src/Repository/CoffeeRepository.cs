@@ -1,7 +1,20 @@
-﻿namespace CoffeeAPIMinimal.Repository
+﻿
+
+namespace CoffeeAPIMinimal.Repository
 {
     public class CoffeeRepository : ICoffeeRepository
     {
+        private readonly IConfiguration _config;
+
+        private readonly string city = "Melbourne";
+
+        private readonly string weatherRedisKey = "weatherForecast";
+
+        public CoffeeRepository(IConfiguration config)
+        {
+            _config = config;
+        }
+
         public async Task<string> CounterAsync(string key, IDistributedCache cache)
         {
             string i = await cache.GetStringAsync(key);
@@ -17,12 +30,16 @@
         public async Task<object> GetCoffeeAsync(IDistributedCache cache, HttpContext context)
         {
             //Declaring a unit recordKey to set our get the data
-            string recordKey = $"WeatherForecast_{DateTime.Now.ToString("yyyyMMdd_hhmm")}";
+            string recordKey = $"Coffee_{DateTime.Now.ToString("yyyyMMdd_hhmm")}";
             Coffee coffees = await cache.GetRecordAsync<Coffee>(recordKey);
 
             string ipAddress = GetIpAddress(context);
 
             string counterString = await CounterAsync(ipAddress, cache);
+            await SetCurrentWeather(cache);
+
+            string weather = await cache.GetStringAsync(weatherRedisKey);
+
 
             if (coffees is not null)
             {
@@ -31,7 +48,7 @@
                     if (int.Parse(counterString) % 5 == 0)
                     {
                         context.Response.StatusCode = 503;
-                        return " ";
+                        return string.Empty;
                     }
 
                     return coffees;
@@ -39,20 +56,42 @@
                 else
                 {
                     context.Response.StatusCode = 418;
-                    return " ";
+                    return string.Empty;
                 }
 
             }
-
-            coffees = new Coffee
+            if(double.Parse(weather) > 30.00)
             {
-                Message = "Your piping hot coffee is ready",
-                Prepared = DateTimeOffset.Now
-            };
+                coffees = new Coffee
+                {
+                    Message = "Your refreshing iced coffee is ready",
+                    Prepared = DateTimeOffset.Now
+                };
+            }
+            else
+            {
+                coffees = new Coffee
+                {
+                    Message = "Your piping hot coffee is ready",
+                    Prepared = DateTimeOffset.Now
+                };
+
+            }
+          
 
             await cache.SetRecordAsync(recordKey, coffees);
 
             return coffees;
+        }
+
+        public async Task SetCurrentWeather(IDistributedCache cache)
+        {
+            var weatherApiKey = _config["OpenWeatherApi:ServiceApiKey"];
+            WeatherClient Client = new WeatherClient(weatherApiKey);
+
+            WeatherModel currentWeather = await Client.GetCurrentWeatherAsync(city);
+            await cache.SetStringAsync(weatherRedisKey, currentWeather.Main.Temperature.FromKelvin().ToCelsius().ToString());
+            
         }
 
         public string GetIpAddress(HttpContext context)
@@ -66,6 +105,7 @@
 
             return clientIp;
         }
+
     }
 }
 

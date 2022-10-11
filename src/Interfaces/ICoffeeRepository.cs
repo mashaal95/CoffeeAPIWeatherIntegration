@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+﻿using CoffeeAPIMinimal.Models;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace CoffeeAPIMinimal.Interfaces
 {
@@ -9,5 +10,8 @@ namespace CoffeeAPIMinimal.Interfaces
         Task<string> CounterAsync(string ipAddress, IDistributedCache cache);
 
         string GetIpAddress(HttpContext context);
+
+        Task SetCurrentWeather(IDistributedCache cache);
+
     }
 }
