@@ -1,5 +1,7 @@
 ﻿
 
+using CoffeeAPIMinimal.Models;
+
 namespace CoffeeAPIMinimal.Repository
 {
     public class CoffeeRepository : ICoffeeRepository
@@ -10,10 +12,9 @@ namespace CoffeeAPIMinimal.Repository
 
         private readonly string weatherRedisKey = "weatherForecast";
 
-        public CoffeeRepository(IConfiguration config)
-        {
+        public CoffeeRepository(IConfiguration config) =>
+            // For the retrieval of the OpenWeatherAPI key
             _config = config;
-        }
 
         public async Task<string> CounterAsync(string key, IDistributedCache cache)
         {
@@ -31,7 +32,7 @@ namespace CoffeeAPIMinimal.Repository
         {
             //Declaring a unit recordKey to set our get the data
             string recordKey = $"Coffee_{DateTime.Now.ToString("yyyyMMdd_hhmm")}";
-            Coffee coffees = await cache.GetRecordAsync<Coffee>(recordKey);
+            object coffees = await cache.GetRecordAsync<Coffee>(recordKey);
 
             string ipAddress = GetIpAddress(context);
 
@@ -40,9 +41,35 @@ namespace CoffeeAPIMinimal.Repository
 
             string weather = await cache.GetStringAsync(weatherRedisKey);
 
+            coffees = WeatherCheck(coffees, weather);
+
+            await cache.SetRecordAsync(recordKey, coffees);
 
             if (coffees is not null)
-            {
+                coffees = AprilDateCheck(coffees, counterString, context);
+
+           
+       
+
+         
+
+            return coffees;
+        }
+
+        public async Task SetCurrentWeather(IDistributedCache cache)
+        {
+            // Using the Secret Manager to store and retrieve the API key for the OpenWeatherAPI
+            var weatherApiKey = _config["OpenWeatherApi:ServiceApiKey"];
+            WeatherClient Client = new WeatherClient(weatherApiKey);
+
+            WeatherModel currentWeather = await Client.GetCurrentWeatherAsync(city, Weather.NET.Enums.Measurement.Metric);
+            await cache.SetStringAsync(weatherRedisKey, currentWeather.Main.Temperature.ToString());
+            
+        }
+
+        private object AprilDateCheck(object coffees, string counterString, HttpContext context)
+        {
+            
                 if (!(DateTime.Today.Day == 1 && DateTime.Today.Month == 4))
                 {
                     if (int.Parse(counterString) % 5 == 0)
@@ -50,8 +77,11 @@ namespace CoffeeAPIMinimal.Repository
                         context.Response.StatusCode = 503;
                         return string.Empty;
                     }
+                    else
+                    {
+                        return coffees;
+                    }
 
-                    return coffees;
                 }
                 else
                 {
@@ -59,8 +89,12 @@ namespace CoffeeAPIMinimal.Repository
                     return string.Empty;
                 }
 
-            }
-            if(double.Parse(weather) > 30.00)
+        }
+
+
+        private Coffee WeatherCheck(object coffees,string weather)
+        {
+            if (double.Parse(weather) > 30.00)
             {
                 coffees = new Coffee
                 {
@@ -77,21 +111,8 @@ namespace CoffeeAPIMinimal.Repository
                 };
 
             }
-          
 
-            await cache.SetRecordAsync(recordKey, coffees);
-
-            return coffees;
-        }
-
-        public async Task SetCurrentWeather(IDistributedCache cache)
-        {
-            var weatherApiKey = _config["OpenWeatherApi:ServiceApiKey"];
-            WeatherClient Client = new WeatherClient(weatherApiKey);
-
-            WeatherModel currentWeather = await Client.GetCurrentWeatherAsync(city);
-            await cache.SetStringAsync(weatherRedisKey, currentWeather.Main.Temperature.FromKelvin().ToCelsius().ToString());
-            
+            return (Coffee)coffees;
         }
 
         public string GetIpAddress(HttpContext context)
