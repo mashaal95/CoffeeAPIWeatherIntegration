@@ -92,7 +92,7 @@ namespace CoffeeAPIMinimal.Repository
         }
 
 
-        private Coffee WeatherCheck(object coffees,string weather)
+        private Coffee PreparingCoffeeWeatherCheck(object coffees,string weather)
         {
             if (double.Parse(weather) > 30.00)
             {
