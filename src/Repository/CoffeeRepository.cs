@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace CoffeeAPIMinimal.Repository
 {
     public class CoffeeRepository : ICoffeeRepository
@@ -107,15 +109,15 @@ namespace CoffeeAPIMinimal.Repository
                 coffees = new Coffee
                 {
                     Message = "Your refreshing iced coffee is ready",
-                    Prepared = DateTimeOffset.Now
-                };
+                    Prepared = DateTime.UtcNow.ToString("yyyy-MM-ddTHH\\:mm\\:sszzz", CultureInfo.InvariantCulture)
+            };
             }
             else
             {
                 coffees = new Coffee
                 {
                     Message = "Your piping hot coffee is ready",
-                    Prepared = DateTimeOffset.Now
+                    Prepared = DateTime.UtcNow.ToString("yyyy-MM-ddTHH\\:mm\\:sszzz", CultureInfo.InvariantCulture)
                 };
 
             }

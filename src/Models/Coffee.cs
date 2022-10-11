@@ -4,6 +4,6 @@
     {
         public string? Message { get; set; }
 
-        public DateTimeOffset? Prepared { get; set; }
+        public string Prepared { get; set; }
     }
 }
