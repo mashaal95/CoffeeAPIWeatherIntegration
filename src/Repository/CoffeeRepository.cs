@@ -1,7 +1,3 @@
-﻿
-
-using CoffeeAPIMinimal.Models;
-
 namespace CoffeeAPIMinimal.Repository
 {
     public class CoffeeRepository : ICoffeeRepository
