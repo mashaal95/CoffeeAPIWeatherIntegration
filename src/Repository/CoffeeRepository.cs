@@ -6,8 +6,6 @@ namespace CoffeeAPIMinimal.Repository
 
         private readonly string city = "Melbourne";
 
-        private readonly string weatherRedisKey = "weatherForecast";
-
         public CoffeeRepository(IConfiguration config) =>
             // For the retrieval of the OpenWeatherAPI key
             _config = config;
